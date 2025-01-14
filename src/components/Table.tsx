@@ -3,14 +3,23 @@ import _ from "lodash";
 import CheckBox from "./CheckBox";
 import clsx from "clsx";
 import { PersonInfo } from "../type";
+import { InView } from "react-intersection-observer";
 
 interface TableProps {
   datas: PersonInfo[];
   onSelectedId: (id: number[]) => void;
   selectedId: number[];
+  onLoadMore: () => void;
+  loading: boolean;
 }
 
-const Table: React.FC<TableProps> = ({ datas, onSelectedId, selectedId }) => {
+const Table: React.FC<TableProps> = ({
+  datas,
+  onSelectedId,
+  selectedId,
+  onLoadMore,
+  loading,
+}) => {
   // 체크박스 관련
   const [allChecked, setAllChecked] = useState<"all" | "intermediate" | "none">(
     "none"
@@ -91,7 +100,7 @@ const Table: React.FC<TableProps> = ({ datas, onSelectedId, selectedId }) => {
             return (
               <>
                 <tr
-                  key={index}
+                  key={`person-${data.id}`}
                   className={`odd:bg-white even:bg-gray-50 hover:bg-primary-hover ${clsx(
                     {
                       "!bg-primary-hover": openRow === data.id,
@@ -139,7 +148,7 @@ const Table: React.FC<TableProps> = ({ datas, onSelectedId, selectedId }) => {
                   </td>
                 </tr>
                 {openRow === data.id && (
-                  <tr>
+                  <tr key={`adressid${data.id}`}>
                     <td
                       colSpan={2}
                       className="p-3 border border-gray-300 text-center"
@@ -162,6 +171,15 @@ const Table: React.FC<TableProps> = ({ datas, onSelectedId, selectedId }) => {
           })}
         </tbody>
       </table>
+
+      <InView
+        as="div"
+        onChange={(inView) => inView && !loading && onLoadMore()}
+      >
+        <div className="h-10 text-center">
+          {loading ? "로딩 중..." : "더 보기"}
+        </div>
+      </InView>
     </div>
   );
 };

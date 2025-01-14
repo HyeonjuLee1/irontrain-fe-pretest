@@ -11,6 +11,7 @@ function App() {
   const [search, setSearch] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const [filterPersons, setFilterPersons] = useState<PersonInfo[]>([]);
+  const [count, setCount] = useState<number>(10);
 
   const getPersonList = useCallback(async () => {
     setLoading(true);
@@ -18,7 +19,7 @@ function App() {
 
     try {
       const queryParams: any = {
-        _quantity: 5,
+        _quantity: count,
         _gender: "female",
         _birthday_start: "2005-01-01",
       };
@@ -29,13 +30,13 @@ function App() {
         ).toString()}`
       );
 
-      setFilterPersons(resp.data.data);
+      setFilterPersons((prev) => [...prev, ...resp.data.data]);
     } catch (error) {
       console.error("getPersonList err:", error);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [count]);
 
   // persons에 값이 없는 경우 즉, 처음 렌더 시에만 실행되도록 조건 추가
   useEffect(() => {
@@ -79,9 +80,11 @@ function App() {
       </div>
 
       <Table
+        loading={loading}
         datas={filterPersons}
         selectedId={selected}
         onSelectedId={(ids) => setSelected(ids)}
+        onLoadMore={() => setCount((prev) => prev + 5)}
       />
     </div>
   );
