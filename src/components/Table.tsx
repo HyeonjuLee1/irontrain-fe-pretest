@@ -2,31 +2,10 @@ import React, { useCallback, useEffect, useState } from "react";
 import _ from "lodash";
 import CheckBox from "./CheckBox";
 import clsx from "clsx";
-
-type Address = {
-  id: number;
-  street: string;
-  streetName: string;
-  buildingNumber: string;
-  city: string;
-  zipcode: string;
-  country: string;
-  country_code: string;
-  latitude: number;
-  longitude: number;
-};
-
-interface TableRow {
-  id: number;
-  firstname: string;
-  lastname: string;
-  email: string;
-  gender?: string;
-  address?: Address;
-}
+import { PersonInfo } from "../type";
 
 interface TableProps {
-  datas: TableRow[];
+  datas: PersonInfo[];
   onSelectedId: (id: number[]) => void;
   selectedId: number[];
 }
@@ -168,7 +147,10 @@ const Table: React.FC<TableProps> = ({ datas, onSelectedId, selectedId }) => {
                     <td className="p-3 border border-gray-300 font-bold">
                       주소
                     </td>
-                    <td colSpan={2} className="p-3 border border-gray-300">
+                    <td
+                      colSpan={2}
+                      className="p-3 border border-gray-300 font-bold"
+                    >
                       {data.address
                         ? `${data.address.street} ${data.address.buildingNumber}, ${data.address.city}, ${data.address.zipcode}, ${data.address.country}`
                         : "-"}
