@@ -1,10 +1,8 @@
-# Project Setup
+Project Setup
 
 ```sh
 npm install
 ```
-
-<br />
 
 개발 서버 실행
 

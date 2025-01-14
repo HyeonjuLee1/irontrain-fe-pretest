@@ -1,14 +1,46 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Table from "./components/Table";
 import { dummyData } from "./mocks/dummyData ";
 import { SearchInput } from "./components/SearchInput";
 import _ from "lodash";
 import { PersonInfo } from "./type";
+import axios from "axios";
 
 function App() {
   const [selected, setSelected] = useState<number[]>([]);
   const [search, setSearch] = useState<string>("");
-  const [filterPersons, setFilterPersons] = useState<PersonInfo[]>(dummyData);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [filterPersons, setFilterPersons] = useState<PersonInfo[]>([]);
+
+  const getPersonList = useCallback(async () => {
+    setLoading(true);
+    setSelected([]);
+
+    try {
+      const queryParams: any = {
+        _quantity: 5,
+        _gender: "female",
+        _birthday_start: "2005-01-01",
+      };
+
+      const resp = await axios.get(
+        `https://fakerapi.it/api/v2/persons?${new URLSearchParams(
+          queryParams
+        ).toString()}`
+      );
+
+      setFilterPersons(resp.data.data);
+    } catch (error) {
+      console.error("getPersonList err:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // persons에 값이 없는 경우 즉, 처음 렌더 시에만 실행되도록 조건 추가
+  useEffect(() => {
+    getPersonList();
+  }, [getPersonList]);
 
   const searchByName = useCallback((searchKey: string) => {
     const lowercasedSearchKey = searchKey.toLowerCase();
