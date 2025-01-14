@@ -1,17 +1,17 @@
 import { useCallback, useEffect, useState } from "react";
 import Table from "./components/Table";
-import { dummyData } from "./mocks/dummyData ";
 import { SearchInput } from "./components/SearchInput";
 import _ from "lodash";
 import { PersonInfo } from "./type";
 import axios from "axios";
+import { v4 as uuidv4 } from "uuid";
 
 function App() {
-  const [selected, setSelected] = useState<number[]>([]);
+  const [selected, setSelected] = useState<string[]>([]);
   const [search, setSearch] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const [filterPersons, setFilterPersons] = useState<PersonInfo[]>([]);
-  const [count, setCount] = useState<number>(10);
+  const [count, setCount] = useState<number>(1);
 
   const getPersonList = useCallback(async () => {
     setLoading(true);
@@ -19,7 +19,7 @@ function App() {
 
     try {
       const queryParams: any = {
-        _quantity: count,
+        _quantity: 50,
         _gender: "female",
         _birthday_start: "2005-01-01",
       };
@@ -30,7 +30,13 @@ function App() {
         ).toString()}`
       );
 
-      setFilterPersons((prev) => [...prev, ...resp.data.data]);
+      const enrichedData = resp.data.data.map((item: { id: any }) => ({
+        ...item,
+        // API로부터 받은 데이터 항목에 중복된 id 값이 포함되어 데이터가 제대로 구분되지 않는 문제 해결
+        uniqueId: `${item.id}-${uuidv4()}`,
+      }));
+
+      setFilterPersons((prev) => [...prev, ...enrichedData]);
     } catch (error) {
       console.error("getPersonList err:", error);
     } finally {
@@ -38,21 +44,26 @@ function App() {
     }
   }, [count]);
 
-  // persons에 값이 없는 경우 즉, 처음 렌더 시에만 실행되도록 조건 추가
   useEffect(() => {
-    getPersonList();
-  }, [getPersonList]);
+    if (search === "") {
+      getPersonList();
+    }
+  }, [getPersonList, count, search]);
 
-  const searchByName = useCallback((searchKey: string) => {
-    const lowercasedSearchKey = searchKey.toLowerCase();
-    const results = _.filter(
-      dummyData,
-      (d) =>
-        _.includes(d.firstname.toLowerCase(), lowercasedSearchKey) ||
-        _.includes(d.lastname.toLowerCase(), lowercasedSearchKey)
-    );
-    setFilterPersons(results);
-  }, []);
+  const searchByName = useCallback(
+    (searchKey: string) => {
+      const lowercasedSearchKey = searchKey.toLowerCase();
+      const results = _.filter(
+        filterPersons,
+        (d) =>
+          _.includes(d.firstname.toLowerCase(), lowercasedSearchKey) ||
+          _.includes(d.lastname.toLowerCase(), lowercasedSearchKey)
+      );
+
+      setFilterPersons(results);
+    },
+    [filterPersons]
+  );
 
   console.log("값 확인", filterPersons);
 
@@ -81,10 +92,13 @@ function App() {
 
       <Table
         loading={loading}
-        datas={filterPersons}
+        data={filterPersons}
         selectedId={selected}
         onSelectedId={(ids) => setSelected(ids)}
-        onLoadMore={() => setCount((prev) => prev + 5)}
+        onLoadMore={() => {
+          console.log("무한스크롤실행");
+          setCount((prev) => prev + 1);
+        }}
       />
     </div>
   );

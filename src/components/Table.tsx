@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import _ from "lodash";
 import CheckBox from "./CheckBox";
 import clsx from "clsx";
@@ -6,25 +6,35 @@ import { PersonInfo } from "../type";
 import { InView } from "react-intersection-observer";
 
 interface TableProps {
-  datas: PersonInfo[];
-  onSelectedId: (id: number[]) => void;
-  selectedId: number[];
+  data: PersonInfo[];
+  onSelectedId: (id: string[]) => void;
+  selectedId: string[];
   onLoadMore: () => void;
   loading: boolean;
 }
 
 const Table: React.FC<TableProps> = ({
-  datas,
+  data,
   onSelectedId,
   selectedId,
   onLoadMore,
   loading,
 }) => {
+  const cellRef = useRef<HTMLTableCellElement>(null);
+  const [isOverflowing, setIsOverflowing] = useState(false);
+
+  useEffect(() => {
+    const element = cellRef.current;
+    if (element) {
+      setIsOverflowing(element.scrollWidth > element.clientWidth);
+    }
+  }, []);
+
   // 체크박스 관련
   const [allChecked, setAllChecked] = useState<"all" | "intermediate" | "none">(
     "none"
   );
-  const newSelecteds = _.map(datas, (d) => d.id);
+  const newSelecteds = _.map(data, (d) => d.id);
   const numSelected = selectedId.length;
   const rowCount = newSelecteds.length;
 
@@ -36,28 +46,28 @@ const Table: React.FC<TableProps> = ({
     } else if (numSelected === rowCount) {
       setAllChecked("all");
     }
-  }, [rowCount, numSelected, datas]);
+  }, [rowCount, numSelected, data]);
 
   const handleSelectAllClick = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       if (allChecked === "all") {
         onSelectedId([]);
       } else {
-        onSelectedId(_.map(datas, (d) => d.id));
+        onSelectedId(_.map(data, (d) => d.uniqueId));
       }
     },
-    [allChecked, datas, onSelectedId]
+    [allChecked, data, onSelectedId]
   );
 
   const isSelected = useCallback(
-    (id: number) => {
+    (id: string) => {
       return selectedId.indexOf(id) !== -1;
     },
     [selectedId]
   );
 
   const handleClick = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>, id: number) => {
+    (e: React.ChangeEvent<HTMLInputElement>, id: string) => {
       const selectedIndex = selectedId.indexOf(id);
       if (selectedIndex > -1) {
         onSelectedId(_.filter(selectedId, (s) => s !== id));
@@ -69,9 +79,9 @@ const Table: React.FC<TableProps> = ({
   );
 
   // 아코디언 관련
-  const [openRow, setOpenRow] = useState<number | null>(null);
+  const [openRow, setOpenRow] = useState<string | null>(null);
 
-  const toggleAccordion = useCallback((id: number) => {
+  const toggleAccordion = useCallback((id: string) => {
     setOpenRow((prev) => (prev === id ? null : id));
   }, []);
 
@@ -93,92 +103,111 @@ const Table: React.FC<TableProps> = ({
             <th className="p-3 border border-gray-300">성별</th>
           </tr>
         </thead>
-        <tbody>
-          {_.map(datas, (data, index) => {
-            const isItemSelected = isSelected(data.id);
+        {
+          <tbody>
+            {_.map(data, (d, index) => {
+              const isItemSelected = isSelected(d.uniqueId);
 
-            return (
-              <>
-                <tr
-                  key={`person-${data.id}`}
-                  className={`odd:bg-white even:bg-gray-50 hover:bg-primary-hover ${clsx(
-                    {
-                      "!bg-primary-hover": openRow === data.id,
-                    }
-                  )}`}
-                >
-                  <td className="p-3 border border-gray-300 text-center">
-                    <CheckBox
-                      key={data.id}
-                      checked={isItemSelected}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                        e.stopPropagation();
-                        handleClick(e, data.id);
-                      }}
-                    />
-                  </td>
-                  <td className="p-3 border border-gray-300">
-                    <button
-                      onClick={() => toggleAccordion(data.id)}
-                      className={`text-black ${clsx({
-                        "!text-primary": openRow === data.id,
-                      })}`}
-                    >
-                      {openRow === data.id ? "▼" : "▶"}
-                    </button>
-                  </td>
-                  <td
-                    className={`p-3 border border-gray-300 text-black ${clsx({
-                      "!text-primary": openRow === data.id,
-                    })}`}
-                  >{`${data.firstname} ${data.lastname}`}</td>
-                  <td
-                    className={`p-3 border border-gray-300 text-black ${clsx({
-                      "!text-primary": openRow === data.id,
-                    })}`}
+              return (
+                <React.Fragment key={d.uniqueId}>
+                  <tr
+                    key={`person-${d.id}`}
+                    className={`odd:bg-white even:bg-gray-50 hover:bg-primary-hover ${clsx(
+                      {
+                        "!bg-primary-hover": openRow === d.uniqueId,
+                      }
+                    )}`}
                   >
-                    {data.email}
-                  </td>
-                  <td
-                    className={`p-3 border border-gray-300 text-black ${clsx({
-                      "!text-primary": openRow === data.id,
-                    })}`}
-                  >
-                    {data.gender || "-"}
-                  </td>
-                </tr>
-                {openRow === data.id && (
-                  <tr key={`adressid${data.id}`}>
-                    <td
-                      colSpan={2}
-                      className="p-3 border border-gray-300 text-center"
-                    ></td>
-                    <td className="p-3 border border-gray-300 font-bold">
-                      주소
+                    <td className="p-3 border border-gray-300 text-center">
+                      <CheckBox
+                        key={d.id}
+                        checked={isItemSelected}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                          e.stopPropagation();
+                          handleClick(e, d.uniqueId);
+                        }}
+                      />
+                    </td>
+                    <td className="p-3 border border-gray-300">
+                      <button
+                        onClick={() => toggleAccordion(d.uniqueId)}
+                        className={`text-black ${clsx({
+                          "!text-primary": openRow === d.uniqueId,
+                        })}`}
+                      >
+                        {openRow === d.uniqueId ? "▼" : "▶"}
+                      </button>
                     </td>
                     <td
-                      colSpan={2}
-                      className="p-3 border border-gray-300 font-bold"
+                      className={`p-3 border border-gray-300 text-black truncate max-w-xs md:max-w-sm lg:max-w-md xl:max-w-lg overflow-hidden whitespace-nowrap text-ellipsis ${clsx(
+                        {
+                          "!text-primary": openRow === d.uniqueId,
+                        }
+                      )}`}
+                      title={`${d.firstname} ${d.lastname}`}
+                    >{`${d.firstname} ${d.lastname}`}</td>
+                    <td
+                      ref={cellRef}
+                      className={`p-3 border border-gray-300 text-black truncate max-w-xs md:max-w-sm lg:max-w-md xl:max-w-lg overflow-hidden whitespace-nowrap text-ellipsis ${clsx(
+                        {
+                          "!text-primary": openRow === d.uniqueId,
+                        }
+                      )}`}
+                      title={isOverflowing ? d.email : undefined}
+                      // title={d.email}
                     >
-                      {data.address
-                        ? `${data.address.street} ${data.address.buildingNumber}, ${data.address.city}, ${data.address.zipcode}, ${data.address.country}`
-                        : "-"}
+                      {d.email}
+                    </td>
+                    <td
+                      className={`p-3 border border-gray-300 text-black truncate overflow-hidden whitespace-nowrap text-ellipsis ${clsx(
+                        {
+                          "!text-primary": openRow === d.uniqueId,
+                        }
+                      )}`}
+                      title={d.gender || "-"}
+                    >
+                      {d.gender || "-"}
                     </td>
                   </tr>
-                )}
-              </>
-            );
-          })}
-        </tbody>
+                  {openRow === d.uniqueId && (
+                    <tr key={`adressid-${d.uniqueId}`}>
+                      <td
+                        colSpan={2}
+                        className="p-3 border border-gray-300 text-center"
+                      ></td>
+                      <td className="p-3 border border-gray-300 font-bold">
+                        주소
+                      </td>
+                      <td
+                        colSpan={2}
+                        className="p-3 border border-gray-300 font-bold truncate max-w-xs md:max-w-sm lg:max-w-md xl:max-w-lg  overflow-hidden whitespace-nowrap text-ellipsis"
+                        title={
+                          d.address
+                            ? `${d.address.street} ${d.address.buildingNumber}, ${d.address.city}, ${d.address.zipcode}, ${d.address.country}`
+                            : "-"
+                        }
+                      >
+                        {d.address
+                          ? `${d.address.street} ${d.address.buildingNumber}, ${d.address.city}, ${d.address.zipcode}, ${d.address.country}`
+                          : "-"}
+                      </td>
+                    </tr>
+                  )}
+                </React.Fragment>
+              );
+            })}
+          </tbody>
+        }
       </table>
 
       <InView
         as="div"
-        onChange={(inView) => inView && !loading && onLoadMore()}
+        onChange={(inView) => {
+          console.log("inView:", inView);
+          inView && !loading && onLoadMore();
+        }}
       >
-        <div className="h-10 text-center">
-          {loading ? "로딩 중..." : "더 보기"}
-        </div>
+        <div className="h-10 text-center">{loading ? "로딩 중..." : ""}</div>
       </InView>
     </div>
   );

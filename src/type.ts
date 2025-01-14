@@ -18,4 +18,5 @@ export interface PersonInfo {
   email: string;
   gender?: string;
   address?: Address;
+  uniqueId: string;
 }

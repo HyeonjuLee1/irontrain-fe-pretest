@@ -39,10 +39,10 @@ const CheckBox = ({
           onBlur={handleBlur}
           className="appearance-none"
         />
-
+        {/* -ml-[4px] */}
         {indeterminate ? (
           <div
-            className={`text-primary w-[20px] h-[20px] -ml-[4px] -mt-[4px] tracking-tighter ${checkedClassName}`}
+            className={`text-primary w-[20px] h-[20px] -mt-[4px] tracking-tighter ${checkedClassName}`}
           >
             <svg
               width="25"
@@ -65,9 +65,11 @@ const CheckBox = ({
             </svg>
           </div>
         ) : checked ? (
+          // -ml-[3px]
           <FontAwesomeIcon
             icon={faCheckSquare}
-            className={`text-primary w-[20px] h-[20px] -ml-[3px] tracking-tighter ${checkedClassName}`}
+            className={`text-primary w-[20px] h-[20px] 
+              tracking-tighter ${checkedClassName}`}
           />
         ) : (
           <FontAwesomeIcon
