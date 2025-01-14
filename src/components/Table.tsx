@@ -1,13 +1,28 @@
-import React, { useCallback, useEffect } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import _ from "lodash";
 import CheckBox from "./CheckBox";
+import clsx from "clsx";
+
+type Address = {
+  id: number;
+  street: string;
+  streetName: string;
+  buildingNumber: string;
+  city: string;
+  zipcode: string;
+  country: string;
+  country_code: string;
+  latitude: number;
+  longitude: number;
+};
 
 interface TableRow {
-  checked: boolean;
-  type: string;
-  name: string;
   id: number;
-  status?: string;
+  firstname: string;
+  lastname: string;
+  email: string;
+  gender?: string;
+  address?: Address;
 }
 
 interface TableProps {
@@ -18,10 +33,9 @@ interface TableProps {
 
 const Table: React.FC<TableProps> = ({ datas, onSelectedId, selectedId }) => {
   // 체크박스 관련
-  const [allChecked, setAllChecked] = React.useState<
-    "all" | "intermediate" | "none"
-  >("none");
-  //   const [selectedId, setSelectedId] = React.useState<number[]>([]);
+  const [allChecked, setAllChecked] = useState<"all" | "intermediate" | "none">(
+    "none"
+  );
   const newSelecteds = _.map(datas, (d) => d.id);
   const numSelected = selectedId.length;
   const rowCount = newSelecteds.length;
@@ -66,6 +80,13 @@ const Table: React.FC<TableProps> = ({ datas, onSelectedId, selectedId }) => {
     [onSelectedId, selectedId]
   );
 
+  // 아코디언 관련
+  const [openRow, setOpenRow] = useState<number | null>(null);
+
+  const toggleAccordion = useCallback((id: number) => {
+    setOpenRow((prev) => (prev === id ? null : id));
+  }, []);
+
   return (
     <div className="overflow-x-auto">
       <table className="min-w-full border border-gray-300 text-sm text-left">
@@ -79,10 +100,9 @@ const Table: React.FC<TableProps> = ({ datas, onSelectedId, selectedId }) => {
               />
             </th>
             <th className="p-3 border border-gray-300">조회</th>
-            <th className="p-3 border border-gray-300">구분</th>
             <th className="p-3 border border-gray-300">이름</th>
-            <th className="p-3 border border-gray-300">아이디</th>
-            <th className="p-3 border border-gray-300">상태</th>
+            <th className="p-3 border border-gray-300">이메일</th>
+            <th className="p-3 border border-gray-300">성별</th>
           </tr>
         </thead>
         <tbody>
@@ -90,27 +110,72 @@ const Table: React.FC<TableProps> = ({ datas, onSelectedId, selectedId }) => {
             const isItemSelected = isSelected(data.id);
 
             return (
-              <tr key={index} className="odd:bg-white even:bg-gray-50">
-                <td className="p-3 border border-gray-300 text-center">
-                  <CheckBox
-                    key={data.id}
-                    checked={isItemSelected}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                      e.stopPropagation();
-                      handleClick(e, data.id);
-                    }}
-                  />
-                </td>
-                <td className="p-3 border border-gray-300">{"화살표"}</td>
-                <td className="p-3 border border-gray-300 text-primary">
-                  {data.type}
-                </td>
-                <td className="p-3 border border-gray-300">{data.name}</td>
-                <td className="p-3 border border-gray-300">{data.id}</td>
-                <td className="p-3 border border-gray-300 text-red-500">
-                  {data.status || "-"}
-                </td>
-              </tr>
+              <>
+                <tr
+                  key={index}
+                  className={`odd:bg-white even:bg-gray-50 hover:bg-primary-hover ${clsx(
+                    {
+                      "!bg-primary-hover": openRow === data.id,
+                    }
+                  )}`}
+                >
+                  <td className="p-3 border border-gray-300 text-center">
+                    <CheckBox
+                      key={data.id}
+                      checked={isItemSelected}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                        e.stopPropagation();
+                        handleClick(e, data.id);
+                      }}
+                    />
+                  </td>
+                  <td className="p-3 border border-gray-300">
+                    <button
+                      onClick={() => toggleAccordion(data.id)}
+                      className={`text-black ${clsx({
+                        "!text-primary": openRow === data.id,
+                      })}`}
+                    >
+                      {openRow === data.id ? "▼" : "▶"}
+                    </button>
+                  </td>
+                  <td
+                    className={`p-3 border border-gray-300 text-black ${clsx({
+                      "!text-primary": openRow === data.id,
+                    })}`}
+                  >{`${data.firstname} ${data.lastname}`}</td>
+                  <td
+                    className={`p-3 border border-gray-300 text-black ${clsx({
+                      "!text-primary": openRow === data.id,
+                    })}`}
+                  >
+                    {data.email}
+                  </td>
+                  <td
+                    className={`p-3 border border-gray-300 text-black ${clsx({
+                      "!text-primary": openRow === data.id,
+                    })}`}
+                  >
+                    {data.gender || "-"}
+                  </td>
+                </tr>
+                {openRow === data.id && (
+                  <tr>
+                    <td
+                      colSpan={2}
+                      className="p-3 border border-gray-300 text-center"
+                    ></td>
+                    <td className="p-3 border border-gray-300 font-bold">
+                      주소
+                    </td>
+                    <td colSpan={2} className="p-3 border border-gray-300">
+                      {data.address
+                        ? `${data.address.street} ${data.address.buildingNumber}, ${data.address.city}, ${data.address.zipcode}, ${data.address.country}`
+                        : "-"}
+                    </td>
+                  </tr>
+                )}
+              </>
             );
           })}
         </tbody>
