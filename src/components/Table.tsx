@@ -1,9 +1,21 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import _ from "lodash";
 import CheckBox from "./CheckBox";
 import clsx from "clsx";
-import { PersonInfo } from "../type";
+import { PersonInfo, SortConfig } from "../type";
 import { InView } from "react-intersection-observer";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import {
+  faSort,
+  faSortUp,
+  faSortDown,
+} from "@fortawesome/free-solid-svg-icons";
 
 interface TableProps {
   data: PersonInfo[];
@@ -11,6 +23,8 @@ interface TableProps {
   selectedId: string[];
   onLoadMore: () => void;
   loading: boolean;
+  onClickSort: (key: string, dir: string) => void;
+  sortConfig: SortConfig;
 }
 
 const Table: React.FC<TableProps> = ({
@@ -19,6 +33,8 @@ const Table: React.FC<TableProps> = ({
   selectedId,
   onLoadMore,
   loading,
+  onClickSort,
+  sortConfig,
 }) => {
   const cellRef = useRef<HTMLTableCellElement>(null);
   const [isOverflowing, setIsOverflowing] = useState(false);
@@ -85,25 +101,101 @@ const Table: React.FC<TableProps> = ({
     setOpenRow((prev) => (prev === id ? null : id));
   }, []);
 
+  // sort 아이콘 관련
+  const sortNameIconMarkup = useMemo(() => {
+    if (sortConfig.key !== "firstname") {
+      return (
+        <FontAwesomeIcon
+          className="ml-1 w-[15px] h-[15px] cursor-pointer"
+          icon={faSort}
+          onClick={() => onClickSort("firstname", "asc")}
+        />
+      );
+    } else if (sortConfig.direction === "asc") {
+      return (
+        <FontAwesomeIcon
+          className="ml-1 w-[15px] h-[15px] cursor-pointer"
+          icon={faSortUp}
+          onClick={() => onClickSort("firstname", "desc")}
+        />
+      );
+    } else if (sortConfig.direction === "desc") {
+      return (
+        <FontAwesomeIcon
+          className="ml-1 w-[15px] h-[15px] cursor-pointer"
+          icon={faSortDown}
+          onClick={() => onClickSort("firstname", "asc")}
+        />
+      );
+    }
+  }, [onClickSort, sortConfig.direction, sortConfig.key]);
+
+  const sortEmailIconMarkup = useMemo(() => {
+    if (sortConfig.key !== "email") {
+      return (
+        <FontAwesomeIcon
+          className="ml-1 w-[15px] h-[15px] cursor-pointer"
+          icon={faSort}
+          onClick={() => onClickSort("email", "asc")}
+        />
+      );
+    } else if (sortConfig.direction === "asc") {
+      return (
+        <FontAwesomeIcon
+          className="ml-1 w-[15px] h-[15px] cursor-pointer"
+          icon={faSortUp}
+          onClick={() => onClickSort("email", "desc")}
+        />
+      );
+    } else if (sortConfig.direction === "desc") {
+      return (
+        <FontAwesomeIcon
+          className="ml-1 w-[15px] h-[15px] cursor-pointer"
+          icon={faSortDown}
+          onClick={() => onClickSort("email", "asc")}
+        />
+      );
+    }
+  }, [onClickSort, sortConfig.direction, sortConfig.key]);
+
   return (
     <div className="overflow-x-auto">
       <table className="min-w-full border border-gray-300 text-sm text-left">
         <thead className="bg-gray-100">
           <tr>
-            <th className="p-3 border border-gray-300">
+            <th className="p-3 border border-gray-300 min-w-[90px]">
               <CheckBox
                 indeterminate={allChecked === "intermediate"}
                 checked={allChecked === "all"}
                 onChange={handleSelectAllClick}
               />
             </th>
-            <th className="p-3 border border-gray-300">조회</th>
-            <th className="p-3 border border-gray-300">이름</th>
-            <th className="p-3 border border-gray-300">이메일</th>
+            <th className="p-3 border border-gray-300 min-w-[90px]">조회</th>
+            <th className="p-3 border border-gray-300">
+              <>
+                <span>이름</span>
+                {sortNameIconMarkup}
+              </>
+            </th>
+            <th className="p-3 border border-gray-300">
+              <>
+                <span> 이메일</span>
+                {sortEmailIconMarkup}
+              </>
+            </th>
             <th className="p-3 border border-gray-300">성별</th>
           </tr>
         </thead>
-        {
+
+        {data.length === 0 && !loading ? (
+          <tbody>
+            <tr>
+              <td colSpan={5} className="text-center p-10">
+                검색결과가 없습니다.
+              </td>
+            </tr>
+          </tbody>
+        ) : (
           <tbody>
             {_.map(data, (d, index) => {
               const isItemSelected = isSelected(d.uniqueId);
@@ -145,7 +237,9 @@ const Table: React.FC<TableProps> = ({
                         }
                       )}`}
                       title={`${d.firstname} ${d.lastname}`}
-                    >{`${d.firstname} ${d.lastname}`}</td>
+                    >
+                      {`${d.firstname} ${d.lastname}`}{" "}
+                    </td>
                     <td
                       ref={cellRef}
                       className={`p-3 border border-gray-300 text-black truncate max-w-xs md:max-w-sm lg:max-w-md xl:max-w-lg overflow-hidden whitespace-nowrap text-ellipsis ${clsx(
@@ -173,7 +267,7 @@ const Table: React.FC<TableProps> = ({
                     <tr key={`adressid-${d.uniqueId}`}>
                       <td
                         colSpan={2}
-                        className="p-3 border border-gray-300 text-center"
+                        className="p-3 border border-gray-300 text-center min-w-[180px]"
                       ></td>
                       <td className="p-3 border border-gray-300 font-bold">
                         주소
@@ -197,17 +291,18 @@ const Table: React.FC<TableProps> = ({
               );
             })}
           </tbody>
-        }
+        )}
       </table>
 
       <InView
         as="div"
         onChange={(inView) => {
-          console.log("inView:", inView);
           inView && !loading && onLoadMore();
         }}
       >
-        <div className="h-10 text-center">{loading ? "로딩 중..." : ""}</div>
+        <div className="h-10 text-center m-3">
+          {loading ? "로딩 중..." : ""}
+        </div>
       </InView>
     </div>
   );

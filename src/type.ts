@@ -20,3 +20,8 @@ export interface PersonInfo {
   address?: Address;
   uniqueId: string;
 }
+
+export interface SortConfig {
+  key: keyof PersonInfo; 
+  direction: "asc" | "desc";
+};

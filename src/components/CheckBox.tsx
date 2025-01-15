@@ -39,10 +39,10 @@ const CheckBox = ({
           onBlur={handleBlur}
           className="appearance-none"
         />
-        {/* -ml-[4px] */}
+
         {indeterminate ? (
           <div
-            className={`text-primary w-[20px] h-[20px] -mt-[4px] tracking-tighter ${checkedClassName}`}
+            className={`-ml-[3px] text-primary w-[20px] h-[20px] -mt-[4px] tracking-tighter ${checkedClassName}`}
           >
             <svg
               width="25"

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import Table from "./components/Table";
 import { SearchInput } from "./components/SearchInput";
 import _ from "lodash";
-import { PersonInfo } from "./type";
+import { PersonInfo, SortConfig } from "./type";
 import axios from "axios";
 import { v4 as uuidv4 } from "uuid";
 
@@ -12,6 +12,11 @@ function App() {
   const [loading, setLoading] = useState<boolean>(false);
   const [filterPersons, setFilterPersons] = useState<PersonInfo[]>([]);
   const [count, setCount] = useState<number>(1);
+  // 처음에는 정렬되어있지 않게 하기위한 고정값
+  const [sortConfig, setSortConfig] = useState<SortConfig>({
+    key: "uniqueId",
+    direction: "asc",
+  });
 
   const getPersonList = useCallback(async () => {
     setLoading(true);
@@ -42,6 +47,7 @@ function App() {
     } finally {
       setLoading(false);
     }
+    // 무한 스크롤을 위한 dependency
   }, [count]);
 
   useEffect(() => {
@@ -65,8 +71,43 @@ function App() {
     [filterPersons]
   );
 
-  console.log("값 확인", filterPersons);
+  // 정렬아이콘 핸들링
+  const handleSort = (key: string) => {
+    let direction = "asc";
+    if (sortConfig.key === key && sortConfig.direction === "asc") {
+      direction = "desc";
+    }
+    setSortConfig({ key, direction } as SortConfig);
+  };
 
+  // 정렬 함수
+  const sortData = useCallback(
+    (selectKey: string, dir: string) => {
+      setSearch("");
+      const sortedData = [...filterPersons];
+      if (sortConfig.key) {
+        sortedData.sort((a, b) => {
+          const aValue = a[selectKey as keyof PersonInfo];
+          const bValue = b[selectKey as keyof PersonInfo];
+
+          // 값이 undefined일 경우 처리하는 로직 추가
+          if (aValue === undefined || bValue === undefined) {
+            return 0;
+          }
+
+          if (aValue < bValue) {
+            return dir === "asc" ? -1 : 1;
+          }
+          if (aValue > bValue) {
+            return dir === "asc" ? 1 : -1;
+          }
+          return 0;
+        });
+      }
+      setFilterPersons(sortedData);
+    },
+    [filterPersons, sortConfig]
+  );
   return (
     <div className="p-5">
       <h1 className="text-xl font-bold mb-4">
@@ -96,9 +137,13 @@ function App() {
         selectedId={selected}
         onSelectedId={(ids) => setSelected(ids)}
         onLoadMore={() => {
-          console.log("무한스크롤실행");
           setCount((prev) => prev + 1);
         }}
+        onClickSort={(key, dir) => {
+          handleSort(key);
+          sortData(key, dir);
+        }}
+        sortConfig={sortConfig}
       />
     </div>
   );
